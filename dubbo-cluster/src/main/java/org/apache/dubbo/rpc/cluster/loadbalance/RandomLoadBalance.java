@@ -25,6 +25,9 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * random load balance.
+ * 随机加权轮询策略，假设服务端提供了 A[2],B[5],C[1] 三台服务，且A服务的权重为2，B服务的权重为5，C服务的权重为1，
+ *
+ * 即在[0,7] 的范围内先随机一个数，如果randomInt < 2，则选取A服务进行服务调用，如果randomInt < 6，则选取B服务进行服务调用，如果randomInt < 7，则选取C服务进行服务调用
  */
 public class RandomLoadBalance extends AbstractLoadBalance {
 

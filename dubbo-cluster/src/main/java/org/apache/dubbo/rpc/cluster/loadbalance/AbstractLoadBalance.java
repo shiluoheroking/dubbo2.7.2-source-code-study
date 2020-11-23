@@ -56,6 +56,11 @@ public abstract class AbstractLoadBalance implements LoadBalance {
         if (invokers.size() == 1) {
             return invokers.get(0);
         }
+        /**
+         * 根据不同的负载均衡策略，调用具体的实现类。默认提供的四种负载均衡策略分别是：权重随机、权重轮询、一致性哈希、最小活跃度。
+         * 对于每种负载均衡策略，都引入了一个时间权重的策略，该策略是为了防止刚启动的机器因为冷启动导致服务还没有达到最佳状态，所以通过启动时间判断将小部分流量慢慢引入到刚启动的机器上去，
+         * 当机器处理能力逐渐快起来，然后该策略就失效了，默认的时间限制是10分钟，即该模型为log10*weight，最大值为weight的随时间变化的weight曲线。
+         */
         return doSelect(invokers, url, invocation);
     }
 

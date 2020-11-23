@@ -376,6 +376,10 @@ public class RegistryProtocol implements Protocol {
                 .setProtocol(url.getParameter(REGISTRY_KEY, DEFAULT_REGISTRY))
                 .removeParameter(REGISTRY_KEY)
                 .build();
+        /**
+         * registryFactory 是一个通过set方法注入的SPI机制的扩展点，所以 registryFactory 是一个 RegistryFactory$Adaptive对象，
+         * 通过getRegistry() 方法对URL进行包装，此处应该获取到的是registry是 ZookeeperRegistryFactory 对象
+         */
         Registry registry = registryFactory.getRegistry(url);
         if (RegistryService.class.equals(type)) {
             return proxyFactory.getInvoker((T) registry, type, url);
@@ -389,6 +393,9 @@ public class RegistryProtocol implements Protocol {
                 return doRefer(getMergeableCluster(), registry, type, url);
             }
         }
+        /**
+         * 获取Invoker对象，其中包含服务端提供的服务列表
+         */
         return doRefer(cluster, registry, type, url);
     }
 
@@ -405,12 +412,27 @@ public class RegistryProtocol implements Protocol {
         URL subscribeUrl = new URL(CONSUMER_PROTOCOL, parameters.remove(REGISTER_IP_KEY), 0, type.getName(), parameters);
         if (!ANY_VALUE.equals(url.getServiceInterface()) && url.getParameter(REGISTER_KEY, true)) {
             directory.setRegisteredConsumerUrl(getRegisteredConsumerUrl(subscribeUrl, url));
+            /**
+             * 向zk集群注册客户端请求，上文我们分析出来此处的registry应该是 ZookeeperRegistryFactory 对象，但是发现没有对应的实现，所以肯定又使用的是模板模式，先调用父类的registry() 方法，
+             *
+             * 而 ZookeeperRegistryFactory 继承了 FailbackRegistry类，所以我们到 FailbackRegistry类看看做了什么
+             */
             registry.register(directory.getRegisteredConsumerUrl());
         }
         directory.buildRouterChain(subscribeUrl);
+        /**
+         * 这里就是向zk注册中心订阅（获取）url对应的服务提供列表，获取的内容包括：category、providers、configurators、routers
+         *
+         * providers：url对应的服务列表
+         * configurators：服务端的配置
+         * routers：路由配置，注意此处的路由配置和负载均衡不是同一个东西，一般路由是通过脚本的方式或者tag的性质进行配置，从而使得流量根据路由规则进行流量分发
+         */
         directory.subscribe(subscribeUrl.addParameter(CATEGORY_KEY,
                 PROVIDERS_CATEGORY + "," + CONFIGURATORS_CATEGORY + "," + ROUTERS_CATEGORY));
 
+        /**
+         * 将获取到服务提供列表和url进行映射缓存，之后客户端向服务端发起调用时，通过缓存在客户端的服务提供列表进行服务访问
+         */
         Invoker invoker = cluster.join(directory);
         ProviderConsumerRegTable.registerConsumer(invoker, url, subscribeUrl, directory);
         return invoker;

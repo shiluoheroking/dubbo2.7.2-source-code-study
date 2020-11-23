@@ -233,6 +233,11 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         removeFailedUnregistered(url);
         try {
             // Sending a registration request to the server side
+            /**
+             * 将发布的服务通过 ZookeeperRegistry.doRegister() 方法注册到zookeeper集群上
+             *
+             * 这个方法之前分析服务发布的时候，服务端就是通过该方法将服务提供列表注册到zk上，此时客户端也调用了该方法，向zk集群注册客户端请求，用于当服务列表发生变化时，通知客户端更新服务列表的
+             */
             doRegister(url);
         } catch (Exception e) {
             Throwable t = e;
@@ -292,6 +297,10 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         removeFailedSubscribed(url, listener);
         try {
             // Sending a subscription request to the server side
+            /**
+             * 通过前面的流程完成了客户端向zk的注册动作（即客户端和zk完成了建连工作），现在向zk集群订阅url对应的服务提供列表，最后保存到客户端的缓存列表中，
+             * 到此便完成了客户端向zk注册中心的建连监听和服务列表的获取工作。
+             */
             doSubscribe(url, listener);
         } catch (Exception e) {
             Throwable t = e;

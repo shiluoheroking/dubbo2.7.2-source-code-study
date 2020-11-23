@@ -247,6 +247,9 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             throw new IllegalStateException("The invoker of ReferenceConfig(" + url + ") has already destroyed!");
         }
         if (ref == null) {
+            /**
+             * 将ref属性进行初始化填充，填充的信息就是zk注册中心提供的服务提供列表
+             */
             init();
         }
         return ref;
@@ -274,6 +277,10 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             return;
         }
         checkStubAndLocal(interfaceClass);
+        /**
+         * mock检查，当服务端进行服务降级后，客户端可以根据自己的策略对被调用者（比如客户端）返回一些信息，比如我们可以通过配置 mock 来对异常进行容错处理，
+         * 容错策略有：快速失败、重试（默认策略）、失败记录日志、失败安全、并行调用、广播等，使用比较频繁的容错策略有快速失败、重试、失败安全等。
+         */
         checkMock(interfaceClass);
         Map<String, String> map = new HashMap<String, String>();
 
@@ -326,6 +333,11 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         }
         map.put(REGISTER_IP_KEY, hostToRegistry);
 
+        /************************* 以上是客户端参数全部放入map中然后后面做参数拼接操作 **********************************/
+
+        /**
+         * 通过 createProxy() 方法，创建一个远程服务提供的客户端代理对象引用，之后客户端发起的所有调用都通过ref对象进行
+         */
         ref = createProxy(map);
 
         String serviceKey = URL.buildKey(interfaceName, group, version);
@@ -349,6 +361,9 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 
     @SuppressWarnings({"unchecked", "rawtypes", "deprecation"})
     private T createProxy(Map<String, String> map) {
+        /**
+         * 如果只是 injvm 通信调用，则不需要去zk注册中心获取服务提供列表
+         */
         if (shouldJvmRefer(map)) {
             URL url = new URL(LOCAL_PROTOCOL, LOCALHOST_VALUE, 0, interfaceClass.getName()).addParameters(map);
             invoker = REF_PROTOCOL.refer(interfaceClass, url);
@@ -392,7 +407,16 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 }
             }
 
+            /*********************************** 以上操作是对URL属性进行填充 ******************************************/
+
             if (urls.size() == 1) {
+                /**
+                 * 通过 SPI机制（自适应扩展点） 获取invoker对象 <p>Protocol REF_PROTOCOL = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();</p>
+                 *
+                 * registry://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService?application=dubbo-consumer&dubbo=2.0.2&pid=38905&qos-enable=false&refer=application%3Ddubbo-consumer%26check%3Dfalse%26cluster%3Dfailover%26dubbo%3D2.0.2%26interface%3Dcom.springboot.dubbo.study.SayHelloService%26lazy%3Dfalse%26loadbalance%3Droundrobin%26methods%3DsayHello%26mock%3Dcom.dubbo.consumer.dubboconsumer.ProviderFailMock%26pid%3D38905%26qos-enable%3Dfalse%26register.ip%3D10.235.64.25%26release%3D2.7.2%26revision%3D0.0.1-SNAPSHOT%26side%3Dconsumer%26sticky%3Dfalse%26timestamp%3D1606106986719&registry=zookeeper&release=2.7.2&timestamp=1606106987801
+                 *
+                 * 通过debug发现 + 猜想，服务端在注册服务时，是通过 RegistryProtocol.export() 进行的，而客户端通过 @Reference 引用获取服务端提供的服务列表，所以接下来应该调用的是 RegistryProtocol.refer() 获取服务提供列表
+                 */
                 invoker = REF_PROTOCOL.refer(interfaceClass, urls.get(0));
             } else {
                 List<Invoker<?>> invokers = new ArrayList<Invoker<?>>();
@@ -430,6 +454,11 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             metadataReportService.publishConsumer(consumerURL);
         }
         // create service proxy
+        /**
+         * 完成从zk注册中心获取服务列表完成后，最后创建一个客户端代理对象，后续的服务调用全部依赖该代理对象进行，默认的代理实现是javassist方式，相比于jdk的反射动态代理方式性能更好一些。
+         *
+         * 到此，客户端和zk通信的相关工作也就完成了，后续就是客户端通过服务列表向服务端发起调用的过程了。
+         */
         return (T) PROXY_FACTORY.getProxy(invoker);
     }
 

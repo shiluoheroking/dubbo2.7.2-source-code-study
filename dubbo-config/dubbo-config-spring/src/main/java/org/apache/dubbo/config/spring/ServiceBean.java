@@ -105,12 +105,15 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
         return service;
     }
 
+    // 当spring容器初始化完成后，发布 ContextRefershedEvent 事件，此方法就会被调用，从而启动dubbo服务
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
+        // 当前服务还没有被暴露过 && 标记服务是否已取消导出，如果调用方法unexported，则值为true
         if (!isExported() && !isUnexported()) {
             if (logger.isInfoEnabled()) {
                 logger.info("The service ready on spring started. service: " + getInterface());
             }
+            // 开始暴露服务
             export();
         }
     }
@@ -333,6 +336,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
      */
     @Override
     public void export() {
+        // 调用父类ServiceConfig的export() 进行服务暴露
         super.export();
         // Publish ServiceBeanExportedEvent
         publishExportEvent();

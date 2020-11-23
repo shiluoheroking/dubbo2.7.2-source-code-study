@@ -67,6 +67,11 @@ public class Exchangers {
             throw new IllegalArgumentException("handler == null");
         }
         url = url.addParameterIfAbsent(Constants.CODEC_KEY, "exchange");
+        /**
+         * 首先获取Exchanger，然后进行绑定。
+         * 到这里相信大家应该能猜得到，这里肯定又是一个扩展点，通过META-INF/dubbo/internal/org.apache.dubbo.remoting.exchange.Exchanger可以看出，
+         * 只不过是只有一个默认的扩展点：HeaderExchanger，所以我们接着看看 HeaderExchanger.bind() 是怎么绑定并启动Natty服务的。
+         */
         return getExchanger(url).bind(url, handler);
     }
 

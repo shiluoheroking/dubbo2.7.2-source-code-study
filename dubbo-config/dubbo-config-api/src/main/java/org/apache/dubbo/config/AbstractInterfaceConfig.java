@@ -324,6 +324,11 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
      * @return
      */
     protected List<URL> loadRegistries(boolean provider) {
+        /**
+         * 该方法就是把xml文件中配置的信息按照注册中心维度，封装成一个一个的URL对象，然后返回
+         *
+         * 注意：整个服务暴露过程中，就是通过不断向下传递URL对象来实现服务的注册与发布的功能
+         */
         // check && override if necessary
         List<URL> registryList = new ArrayList<URL>();
         if (CollectionUtils.isNotEmpty(registries)) {

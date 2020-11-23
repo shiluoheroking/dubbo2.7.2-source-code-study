@@ -181,6 +181,17 @@ public class RegistryProtocol implements Protocol {
     }
 
     public void register(URL registryUrl, URL registeredProviderUrl) {
+        /**
+         * 通过 registryFactory 获取注册中心，即指定使用哪种类型的注册中心进行服务注册。
+         * 所以猜想此处的 registryFactory 肯定又是一个扩展点，但和之前遇到的扩展点不同，这里是通过 setRegistryFactory() 方法进行依赖注入的，
+         *
+         * 所以此处的 registryFactory 是一个 registryFactory@Adaptive对象，该对象会调用 getProtocol() 获取到的值为： zookeeper,
+         * 也就是说 registryFactory.getRegistry(registryUrl) 最终肯定调用的是 ZookeeperRegistry.register() 方法，但是查看实现类并没有发现 ZookeeperRegistry类，
+         * 所以猜测应该是父类实现了register() 方法，而父类在调用各个子类的具体实现完成服务的注册。
+         *
+         * 其实这种先调用父类，然后通过父类在调用子类的具体实现的做法，可以理解为是模板模式（父类提供一个实现具体实现的模板，各个子类去实现不同的特性），
+         * 相信看过JDK的concurrent并发包中的AQS的实现，体会会比较深刻。
+         */
         Registry registry = registryFactory.getRegistry(registryUrl);
         registry.register(registeredProviderUrl);
     }
@@ -192,8 +203,16 @@ public class RegistryProtocol implements Protocol {
 
     @Override
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
+        /**
+         * 1: 获取注册中心的URL，我配置的是zookeeper，所以该URL应该类似是：zookeeper://127.0.0.1:2181/zookeeper://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService?application=dubbo-provider&com.dubbo.study.UserService.....
+         *    所以该URL应该是要注册到Zookeeper注册中心的
+         */
         URL registryUrl = getRegistryUrl(originInvoker);
         // url to export locally
+        /**
+         * 2: 获取发布服务的URL，我配置的发布协议是dubbo，所以该URL应该类似是：dubbo://10.235.64.18:20880/com.dubbo.study.UserService?anyhost=true&application=dubbo-provider
+         *    所以该URL应该是用来启动Natty服务，并开启20880服务端口，然后将该服务以channel的形式注册到Natty服务上
+         */
         URL providerUrl = getProviderUrl(originInvoker);
 
         // Subscribe the override data
@@ -206,6 +225,9 @@ public class RegistryProtocol implements Protocol {
 
         providerUrl = overrideUrlWithConfig(providerUrl, overrideSubscribeListener);
         //export invoker
+        /**
+         * 3: 这里才是真正将服务注册到Natty上
+         */
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker, providerUrl);
 
         // url to registry
@@ -216,10 +238,16 @@ public class RegistryProtocol implements Protocol {
         //to judge if we need to delay publish
         boolean register = registeredProviderUrl.getParameter("register", true);
         if (register) {
+            /**
+             * 4: 将发布的服务注册到Zookeeper上
+             */
             register(registryUrl, registeredProviderUrl);
             providerInvokerWrapper.setReg(true);
         }
 
+        /**
+         * 到此，我们就完成了预设目标的两件事，其一：启动Natty服务，并将服务注册到Natty上；其二：将启动的服务注册到Zookeeper上。
+         */
         // Deprecated! Subscribe to override rules in 2.6.x or before.
         registry.subscribe(overrideSubscribeUrl, overrideSubscribeListener);
 
@@ -240,6 +268,12 @@ public class RegistryProtocol implements Protocol {
     private <T> ExporterChangeableWrapper<T> doLocalExport(final Invoker<T> originInvoker, URL providerUrl) {
         String key = getCacheKey(originInvoker);
 
+        /**
+         * 通过 protocol.export() 进行服务真正的注册，可以看出，此处又一次使用了SPI机制，由于我配置选择了使用dubbo协议进行服务发布，
+         * 所以 protocol.export() 真正的调用应该是 DubboProtocol.export() 方法进行服务发布。
+         *
+         * 所以我们接着进入到 DubboProtocol.export() 方法来看看服务是如何进行发布的。
+         */
         return (ExporterChangeableWrapper<T>) bounds.computeIfAbsent(key, s -> {
             Invoker<?> invokerDelegate = new InvokerDelegate<>(originInvoker, providerUrl);
             return new ExporterChangeableWrapper<>((Exporter<T>) protocol.export(invokerDelegate), originInvoker);

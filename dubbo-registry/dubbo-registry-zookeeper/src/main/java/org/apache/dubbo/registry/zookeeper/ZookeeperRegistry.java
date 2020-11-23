@@ -112,6 +112,17 @@ public class ZookeeperRegistry extends FailbackRegistry {
     @Override
     public void doRegister(URL url) {
         try {
+            /**
+             * 服务注册终点出现在眼前 ！！！！
+             *
+             * 通过zkClient.create()方法调用zkServer，将URL写入到zkServer上
+             *
+             * 至此，服务注册也就完成了，牛逼！！！
+             *
+             * ------------------- 此处应该有掌声 -----------------------
+             * ------------------- 此处应该有掌声 -----------------------
+             * ------------------- 此处应该有掌声 -----------------------
+             */
             zkClient.create(toUrlPath(url), url.getParameter(DYNAMIC_KEY, true));
         } catch (Throwable e) {
             throw new RpcException("Failed to register " + url + " to zookeeper " + getUrl() + ", cause: " + e.getMessage(), e);

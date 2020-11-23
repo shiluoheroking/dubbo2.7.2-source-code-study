@@ -67,11 +67,26 @@ public class NettyServer extends AbstractServer implements Server {
     private EventLoopGroup workerGroup;
 
     public NettyServer(URL url, ChannelHandler handler) throws RemotingException {
+        /**
+         * 调用父类的构造方法，然后通过父类调动doOpen() 方法，启动Natty服务
+         */
         super(url, ChannelHandlers.wrap(handler, ExecutorUtil.setThreadName(url, SERVER_THREAD_POOL_NAME)));
     }
 
     @Override
     protected void doOpen() throws Throwable {
+        /**
+         * 这里便是我们发布服务的最终点，就问你熟悉不 ？？？
+         *
+         * 启动boss线程组和worker线程组，然后将channelHandler注册上去
+         *
+         * 服务终于通过Natty发不出去啦 ！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+         *
+         * -------------------- 此处应该有掌声 ------------------------------
+         * -------------------- 此处应该有掌声 ------------------------------
+         * -------------------- 此处应该有掌声 ------------------------------
+         *
+         */
         bootstrap = new ServerBootstrap();
 
         bossGroup = new NioEventLoopGroup(1, new DefaultThreadFactory("NettyServerBoss", true));

@@ -97,7 +97,13 @@ public class FailbackClusterInvoker<T> extends AbstractClusterInvoker<T> {
         Invoker<T> invoker = null;
         try {
             checkInvokers(invokers, invocation);
+            /**
+             * 使用loadbalance策略，选择一个Invoker代理，用于发起服务调用
+             */
             invoker = select(loadbalance, invocation, invokers, null);
+            /**
+             * 发起服务调用，并返回result
+             */
             return invoker.invoke(invocation);
         } catch (Throwable e) {
             logger.error("Failback to invoke method " + invocation.getMethodName() + ", wait for retry in background. Ignored exception: "

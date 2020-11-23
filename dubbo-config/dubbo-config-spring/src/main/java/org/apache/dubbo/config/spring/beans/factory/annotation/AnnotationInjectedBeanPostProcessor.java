@@ -331,9 +331,15 @@ public abstract class AnnotationInjectedBeanPostProcessor<A extends Annotation> 
 
         String cacheKey = buildInjectedObjectCacheKey(annotation, bean, beanName, injectedType, injectedElement);
 
+        /**
+         * 首先从客户端缓存中获取当前key对应服务提供列表对象，若获取到则不需要从zk注册中心查询
+         */
         Object injectedObject = injectedObjectsCache.get(cacheKey);
 
         if (injectedObject == null) {
+            /**
+             * 获取客户端引用对应在zk注册中心中提供的服务列表信息对象
+             */
             injectedObject = doGetInjectedBean(annotation, bean, beanName, injectedType, injectedElement);
             // Customized inject-object if necessary
             injectedObjectsCache.putIfAbsent(cacheKey, injectedObject);
@@ -512,8 +518,19 @@ public abstract class AnnotationInjectedBeanPostProcessor<A extends Annotation> 
         @Override
         protected void inject(Object bean, String beanName, PropertyValues pvs) throws Throwable {
 
+            /**
+             * 在dubbo客户端启动时，通过 dubbo.scan.base-packages 配置扫描指定包下所有标识了 @Reference 注解的字段，该标识表示该属性是一个dubbo服务端提供的服务引用，
+             *
+             * 接下来从这里开始便是根据被 @Reference 注解标识的字段获取对应的dubbo服务端提供的服务列表，然后缓存到客户端，之后当真正发起服务调用时，
+             * 通过在客户端缓存的服务提供列表中选取一个服务提供者进行服务调用即可。
+             *
+             * 接下来我们就来看看被注解标识的属性是如何获取到服务提供列表的，而获取服务提供列表首先需要和注册中心进行通信（Zookeeper注册中心、Redis注册中心等等）。
+             */
             Class<?> injectedType = field.getType();
 
+            /**
+             * 通过注解标识的字段获取对应的服务提供列表，然后存放到field中做成 bean(客户端bean实例) -> injectedObject(服务提供列表) 的映射关系
+             */
             Object injectedObject = getInjectedObject(annotation, bean, beanName, injectedType, this);
 
             ReflectionUtils.makeAccessible(field);

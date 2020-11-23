@@ -137,6 +137,9 @@ public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBean
             localReferenceBeanInvocationHandlerCache.put(referencedBeanName, handler);
         } else {
             // Remote Reference Bean should initialize immediately
+            /**
+             * 初始化，并获取对应对应服务提供地址
+             */
             handler.init();
         }
 
@@ -161,6 +164,9 @@ public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBean
                     // issue: https://github.com/apache/dubbo/issues/3429
                     init();
                 }
+                /**
+                 * 客户端发起服务调用请求
+                 */
                 result = method.invoke(bean, args);
             } catch (InvocationTargetException e) {
                 // re-throws the actual Exception.
@@ -170,6 +176,14 @@ public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBean
         }
 
         private void init() {
+            /**
+             * referenceBean 是通过Spring容器管理的bean实例，即我们通过xml配置的信息和初始化的一些默认信息
+             *
+             * 比如：<dubbo:reference singleton="true" prefix="dubbo.reference.com.springboot.dubbo.study.SayHelloService"
+             *      interface="com.springboot.dubbo.study.SayHelloService" generic="false" generic="false" lazy="false"
+             *      sticky="false" check="false" cluster="failover" mock="com.dubbo.consumer.dubboconsumer.ProviderFailMock"
+             *      loadbalance="roundrobin" valid="true" id="com.springboot.dubbo.study.SayHelloService" />
+             */
             this.bean = referenceBean.get();
         }
     }

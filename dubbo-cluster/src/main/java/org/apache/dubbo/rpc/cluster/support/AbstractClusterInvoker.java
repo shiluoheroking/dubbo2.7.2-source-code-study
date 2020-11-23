@@ -139,6 +139,9 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
             }
         }
 
+        /**
+         * 选择一个Invoker对象
+         */
         Invoker<T> invoker = doSelect(loadbalance, invocation, invokers, selected);
 
         if (sticky) {
@@ -156,6 +159,9 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
         if (invokers.size() == 1) {
             return invokers.get(0);
         }
+        /**
+         * 根据指定的负载均衡策略选择一个Invoker对象
+         */
         Invoker<T> invoker = loadbalance.select(invokers, getUrl(), invocation);
 
         //If the `invoker` is in the  `selected` or invoker is unavailable && availablecheck is true, reselect.
@@ -243,8 +249,14 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
         }
 
         List<Invoker<T>> invokers = list(invocation);
+        /**
+         * 获取负载均衡策略，用于后续选取服务提供者，实现方式采用的SPI机制，所以我们也可以实现自己的负载均衡策略
+         */
         LoadBalance loadbalance = initLoadBalance(invokers, invocation);
         RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);
+        /**
+         * 通过具体的失败策略来实现后续服务调用失败后该怎么处理，默认采用 FailoverClusterInvoker
+         */
         return doInvoke(invocation, invokers, loadbalance);
     }
 

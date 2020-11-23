@@ -81,6 +81,9 @@ public abstract class AbstractProxyInvoker<T> implements Invoker<T> {
     @Override
     public Result invoke(Invocation invocation) throws RpcException {
         try {
+            /**
+             * 通过doInvoke 方法向服务提供方发起调用，默认采用javassist的动态代理方式，底层在通过natty就将请求发送到了服务端，服务端接收到请求以后，先做解码，然后调用实现类，如果有返回值，将返回值进行编码后返回给客户端。
+             */
             Object value = doInvoke(proxy, invocation.getMethodName(), invocation.getParameterTypes(), invocation.getArguments());
             CompletableFuture<Object> future = wrapWithFuture(value, invocation);
             AsyncRpcResult asyncRpcResult = new AsyncRpcResult(invocation);

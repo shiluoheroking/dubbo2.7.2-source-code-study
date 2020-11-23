@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Round robin load balance.
+ * 带权重的轮询机制，和随机带权重的负载均衡策略类似
  */
 public class RoundRobinLoadBalance extends AbstractLoadBalance {
     public static final String NAME = "roundrobin";

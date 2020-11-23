@@ -52,6 +52,9 @@ public class InvokerInvocationHandler implements InvocationHandler {
             return invoker.equals(args[0]);
         }
 
+        /**
+         * 服务发起调用，通过debug此时的Invoker应该是 MockClusterInvoker，所以调用MockClusterInvoker.invoker() 方法
+         */
         return invoker.invoke(new RpcInvocation(method, args)).recreate();
     }
 }

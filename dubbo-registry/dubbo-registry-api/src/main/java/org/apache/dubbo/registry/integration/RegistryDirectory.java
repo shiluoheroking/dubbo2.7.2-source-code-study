@@ -167,8 +167,14 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
 
     public void subscribe(URL url) {
         setConsumerUrl(url);
+        /**
+         * 客户端注册监听器，当zk集群的节点信息发生变更时，会通过notify方法调用客户端，从而对客户端缓存的服务列表进行更新操作
+         */
         CONSUMER_CONFIGURATION_LISTENER.addNotifyListener(this);
         serviceConfigurationListener = new ReferenceConfigurationListener(this, url);
+        /**
+         * 从zk集群上订阅服务列表信息
+         */
         registry.subscribe(url, this);
     }
 

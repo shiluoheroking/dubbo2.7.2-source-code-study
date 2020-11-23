@@ -16,7 +16,7 @@
 ## 关于调试启动问题：
 
 需要先启动Zookeeper，然后才能正常启动dubbo服务端和客户端，
-- 服务端启动入口类：`DubboProviderApplication.java`，
+- 服务端启动入口类：`DubboProviderApplication.java`
 - 客户端启动类入口：`DubboConsumerApplication.java`
 
 

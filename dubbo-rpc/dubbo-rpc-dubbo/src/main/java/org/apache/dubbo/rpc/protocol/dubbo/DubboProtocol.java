@@ -280,6 +280,9 @@ public class DubboProtocol extends AbstractProtocol {
 
     @Override
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
+        /**
+         * 1: 获取要注册的服务URL
+         */
         URL url = invoker.getUrl();
 
         // export service.
@@ -303,7 +306,13 @@ public class DubboProtocol extends AbstractProtocol {
             }
         }
 
+        /**
+         * 2: 注册服务，其实在这一步完成之后，我们的服务也就完成发布了，所以从这里也可以看出，整个服务发布过程中，URL被不断地向下传递，直到最终服务被发布成功
+         */
         openServer(url);
+        /**
+         * 3: 序列化优化操作
+         */
         optimizeSerialization(url);
 
         return exporter;
@@ -320,11 +329,17 @@ public class DubboProtocol extends AbstractProtocol {
                 synchronized (this) {
                     server = serverMap.get(key);
                     if (server == null) {
+                        /**
+                         * 1: 当Natty服务还没有被启动是，首先通过createServer启动Natty服务，然后将URL注册到Natty上
+                         */
                         serverMap.put(key, createServer(url));
                     }
                 }
             } else {
                 // server supports reset, use together with override
+                /**
+                 * 2: Natty服务已经启动，则直接将URL注册到Natty上即可，如果是注册一个已经注册过的服务，则采用覆盖的方式重置服务。
+                 */
                 server.reset(url);
             }
         }
@@ -346,6 +361,9 @@ public class DubboProtocol extends AbstractProtocol {
 
         ExchangeServer server;
         try {
+            /**
+             * 通过 Exchange进行Natty服务的绑定
+             */
             server = Exchangers.bind(url, requestHandler);
         } catch (RemotingException e) {
             throw new RpcException("Fail to start server(url: " + url + ") " + e.getMessage(), e);

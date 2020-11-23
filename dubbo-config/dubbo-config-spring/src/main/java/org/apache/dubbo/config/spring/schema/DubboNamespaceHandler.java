@@ -56,6 +56,13 @@ public class DubboNamespaceHandler extends NamespaceHandlerSupport {
         registerBeanDefinitionParser("provider", new DubboBeanDefinitionParser(ProviderConfig.class, true));
         registerBeanDefinitionParser("consumer", new DubboBeanDefinitionParser(ConsumerConfig.class, true));
         registerBeanDefinitionParser("protocol", new DubboBeanDefinitionParser(ProtocolConfig.class, true));
+
+        // service 标签用于dubbo提供者发布服务的
+        // DubboBeanDefinitionParser 解析器用于解析 xml文件/注解，从而生成BeanDefinition对象，然后Spring通过BeanDefinition对象实例化Bean实例
+        // 当Spring容器装载完所有bean实例后，调用 `ClassPathXmlApplication.finishRefresh()` 发布event事件
+        // ServiceBean实现了 `ApplicationListener.onApplicationEvent()` 方法，通过该方法接收event事件，然后启动dubbo-provider（服务提供方）发布dubbo服务
+        // 其底层通过netty开启20880端口接收服务调用者的请求，同时底层也会通过zk的client方法向zookeeper集群注册dubbo发布的服务
+        // 注意：以上流程适用于dubbo2.7.2版本，在dubbo2.7.5版本后，通过 DubboBootstrapApplicationListener类 实现了 ApplicationListener接口用于接收event事件，从而启动dubbo服务
         registerBeanDefinitionParser("service", new DubboBeanDefinitionParser(ServiceBean.class, true));
         registerBeanDefinitionParser("reference", new DubboBeanDefinitionParser(ReferenceBean.class, false));
         registerBeanDefinitionParser("annotation", new AnnotationBeanDefinitionParser());

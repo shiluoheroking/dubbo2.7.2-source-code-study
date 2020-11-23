@@ -29,6 +29,11 @@ public class NettyTransporter implements Transporter {
 
     @Override
     public Server bind(URL url, ChannelHandler listener) throws RemotingException {
+        /**
+         * 终于看到服务启动启动了！！！激动ing
+         *
+         * 创建一个NattyServer，并将channelHandler注册上去，此时的channelHandler就对应我们一路传下来的URL
+         */
         return new NettyServer(url, listener);
     }
 

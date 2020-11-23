@@ -53,6 +53,12 @@ public class Transporters {
         } else {
             handler = new ChannelHandlerDispatcher(handlers);
         }
+        /**
+         * 创建一个Channel对象，通过 getTransporter() 获取要启动那种服务。
+         * 不难猜出，getTransporter() 肯定又是一个扩展点，因为我们发布服务可以使用 Natty3发布服务，也可以是用 Natty4发布，
+         * 通过 META-INF/dubbo/internal/org.apache.dubbo.remoting.Transporter 文件可以看出，Dubbo支持通过 Natty3、Natty4、mina、grizzly进行服务发布。
+         * 默认采用Natty4进行服务发布，所以我们进入Natty4对应的 NettyTransporter.bind() 来看看服务是如何发布的。
+         */
         return getTransporter().bind(url, handler);
     }
 
